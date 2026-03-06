@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Slope Slider Game</title>
+    <style>
+        body { text-align: center; font-family: sans-serif; background: #f0f0f0; }
+        canvas { background: #fff; border: 2px solid #333; cursor: crosshair; margin-top: 20px; }
+        .ui { margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Slope Slider</h1>
+    <div class="ui">Score: <span id="score">0</span> | Click/Drag to change the slope!</div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+
+        let score = 0;
+        let ball = { x: 50, y: 0, radius: 10, vx: 0, vy: 0 };
+        let line = { x1: 0, y1: 300, x2: 600, y2: 300 }; // The "Slope"
+        let target = { x: 500, y: 280, width: 40 };
+
+        function update() {
+            // 1. Calculate Slope (m)
+            const deltaX = line.x2 - line.x1;
+            const deltaY = line.y2 - line.y1;
+            const m = deltaY / deltaX; 
+
+            // 2. Physics: Move ball based on slope
+            // If slope is negative (uphill visually), ball moves left. 
+            // If slope is positive (downhill visually), ball moves right.
+            ball.vx += m * 0.5; 
+            ball.vx *= 0.98; // Friction
+            ball.x += ball.vx;
+
+            // 3. Keep ball on the line
+            // Equation: y - y1 = m(x - x1)  =>  y = m(x - x1) + y1
+            ball.y = m * (ball.x - line.x1) + line.y1 - ball.radius;
+
+            // 4. Check for Win (Target)
+            if (ball.x > target.x && ball.x < target.x + target.width) {
+                score++;
+                scoreEl.innerText = score;
+                resetBall();
+            }
+
+            // 5. Bounds Check
+            if (ball.x < 0 || ball.x > canvas.width) resetBall();
+        }
+
+        function resetBall() {
+            ball.x = 50;
+            ball.vx = 0;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Target Hole
+            ctx.fillStyle = "#333";
+            ctx.fillRect(target.x, target.y + 20, target.width, 10);
+
+            // Draw Slope Line
+            ctx.beginPath();
+            ctx.moveTo(line.x1, line.y1);
+            ctx.lineTo(line.x2, line.y2);
+            ctx.strokeStyle = "#007bff";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Draw Ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff4757";
+            ctx.fill();
+            ctx.closePath();
+
+            update();
+            requestAnimationFrame(draw);
+        }
+
+        // Interaction: Change slope based on mouse height
+        canvas.addEventListener('mousemove', (e) => {
+            if (e.buttons === 1) { // If clicking/dragging
+                const rect = canvas.getBoundingClientRect();
+                line.y2 = e.clientY - rect.top;
+            }
+        });
+
+        draw();
+    </script>
+</body>
+</html>
